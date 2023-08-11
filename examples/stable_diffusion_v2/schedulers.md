@@ -35,33 +35,49 @@ You can obtain diverse results according to the given **prompt**. Here are 5 exa
 | :----: | :----: | :----: | :----: | :----: |
 | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/6a84e5ae-baab-4461-91ec-14f55b16aee2" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/62c0bb93-68a8-4ff1-8bc5-0c9305931ac0" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/92441896-8786-465b-82a2-3438aad85476" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/e626ae1b-8fa6-4ad8-a083-ec39e4944277" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/d3728d81-4a31-4d53-baf0-cd79b6046ca3" width="155" height="155" /> |
 
-### Fast Inference
+### Changing the scheduler
 
-For fast inference, we provide several scripts using different schedulers:
+As quantitative evaluation for different schedulers is usually not sufficient to determine which is the best, it is often recommended to simply try out and check out visually. You can test the stable diffusion model with different scheduler by the following
+commands. In addition to the default scheduler **plms**, the **${scheduler}** can be one of **ddim**, **dpm_solver**, **dpm_solver_pp** and **uni_pc** .
 
-```bash
-# Text to image generation with SD2.0, using PLMS scheduler
-bash scripts/tests/test_plms_sampler.sh
-# Text to image generation with SD2.0, using DDIM scheduler
-bash scripts/tests/test_ddim_sampler.sh
-# Text to image generation with SD2.0, using DPM-Solver scheduler
-bash scripts/tests/test_dpmsolver_sampler.sh
-# Text to image generation with SD2.0, using DPM-Solver++ scheduler
-bash scripts/tests/test_dpmsolverpp_sampler.sh
-# Text to image generation with SD2.0, using UniPC scheduler
-bash scripts/tests/test_unipc_sampler.sh
+```shell
+# Text to image generation with SD2.0. Select one ${scheduler_name}, otherwise the scheduler will be plms.
+# ${prompt} can be "A Van Gogh style oil painting of sunflower"a s example.
+python text_to_image.py \
+    --prompt ${prompt} \
+    --config configs/v2-inference.yaml \
+    --output_path ./output/ \
+    --seed 42 \
+    --${scheduler}
+    --n_iter 8 \
+    --n_samples 1 \
+    --W 512 \
+    --H 512 \
+    --sampling_steps ${sampling_steps}
 ```
+Not that, the optimal hyper-parameters can vary for different schedulers, e.g., the optimal **${sampling_steps}** is 50 for PLMS, DDIM and 20 for UniPC,DPM-Solver, DPM-Solver++. If you set big sampling steps for UniPC schedulers, the program will report a warning such as **The selected sampling timesteps are not appropriate for UniPC sampler**.
 
-The default prompt is **A Van Gogh style oil painting of sunflower**. Some hyper-parameters are not shared for different schedulers, e.g., sampling steps. For instance, DPM-Solver, DPM-Solver++, and UniPC need smaller sampling steps (e.g., 20) than DDIM and PLMS samplers (e.g., 50).
+### Comparison of different schedulers
 
-Note that, if you set big sampling steps for DPM-Solver, DPM-Solver++, and UniPC schedulers, the program will report a warning such as **The selected sampling timesteps are not appropriate for UniPC sampler**.
+#### Time Comparison
 
-### Visual Comparison
+For reference, the following table is based on the commands above with different **${scheduler}** and their optimal **${sampling_steps}** and executed on Ascend 910.
 
-Some text-to-image generation examples using different schedulers are shown here:
+| **${scheduler}** | **${sampling_steps}** | time(seconds/image)|
+|:----------------:|:--------------:|:------:|
+|       ddim       |       50       |16.48|
+|       plms       |       50       |17.10|
+|    dmp_solver    |       20       |12.72|
+|  dmp_solver_pp   |       20       |13.43|
+|      uni_pc      |       20       |14.97|
+
+
+#### Visual Comparison
+
+Some text-to-image generation examples based on the commands above with different **${prompt}**  and different scheduler(as the table above) are shown here:
 
 ```bash
-A Van Gogh style oil painting of sunflower
+${prompt}="A Van Gogh style oil painting of sunflower"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -70,7 +86,7 @@ A Van Gogh style oil painting of sunflower
 | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/9f1a5530-87ac-4fa4-adc2-3b304bfc636d" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/430cc134-16cb-4327-9b88-1bc6de99f33b" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/2ae82e37-f27a-4805-8d05-71c8a8f8676e" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/b71626a5-2d39-4c70-aee7-e68cc2c10651" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/b693bcaa-479c-4fdf-adce-22afd453f975" width="155" height="155" /> |
 
 ```bash
-A photo of an astronaut riding a horse on mars
+${prompt}="A photo of an astronaut riding a horse on mars"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -79,7 +95,7 @@ A photo of an astronaut riding a horse on mars
 | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/ae6af084-7930-42fd-a91d-7aaf182f5f5b" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/9fbb2419-56d6-49cb-8dee-f3c85007dfc3" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/1305a1f7-dec7-4ca7-aae1-b5bb6aa1a55d" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/00cfffb6-4d59-4769-98c4-676b6ec9d7f2" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/7c928546-be38-4d0a-9cb2-4646b84abbce" width="155" height="155" /> |
 
 ```bash
-A high tech solarpunk utopia in the Amazon rainforest
+${prompt}="A high tech solarpunk utopia in the Amazon rainforest"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -88,7 +104,7 @@ A high tech solarpunk utopia in the Amazon rainforest
 | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/2faa35c9-c52b-4753-afdc-ea3b24afb2d2" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/4c698e0f-ddfe-44eb-bb79-1e4f97b0496c" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/ff80bf66-4244-4624-ad1b-074aa36f62be" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/ced062af-1a40-46e7-9f27-e66cd119b3e1" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/0cd3e4c1-f9ab-4636-a819-a4278c08d991" width="155" height="155" /> |
 
 ```bash
-The beautiful night view of the city has various buildings, traffic flow, and lights
+${prompt}="The beautiful night view of the city has various buildings, traffic flow, and lights"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -97,7 +113,7 @@ The beautiful night view of the city has various buildings, traffic flow, and li
 | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/b3fdcf9b-699d-4717-a997-c7f7fac4858e" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/7f328896-3765-4297-b280-c33f45b442b8" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/318ff4ea-833d-4ea9-9e27-a8ea7e2c9494" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/504e8a9b-a484-4274-9819-9d214fb58b74" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/c136d39d-d893-408e-968e-3f4c465ba3da" width="155" height="155" /> |
 
 ```bash
-A pikachu fine dining with a view to the Eiffel Tower
+${prompt}="A pikachu fine dining with a view to the Eiffel Tower"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -116,7 +132,7 @@ Based on the LoRA models trained on pokemon and chinese_art datasets (see [LoRA]
 - pokemon dataset:
 
 ```bash
-a drawing of a blue and white cat with big eyes
+${prompt}="a drawing of a blue and white cat with big eyes"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -124,7 +140,7 @@ a drawing of a blue and white cat with big eyes
 | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/99c2463a-5e8f-458a-962e-4d28c535d878" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/df3342c8-bfe1-424f-8c76-0aad0b7363d6" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/18b9b0b0-7dc3-437a-8f87-fc86fccfd4d7" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/26cf1959-90fc-470e-8114-14d6dc1f82e5" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/32d44ebc-bc62-4336-a836-ae7cace21e86" width="155" height="155" /> |
 
 ```bash
-a cartoon of a black and white pokemon
+${prompt}="a cartoon of a black and white pokemon"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -134,7 +150,7 @@ a cartoon of a black and white pokemon
 - chinese_art dataset:
 
 ```bash
-a painting of a group of people sitting on a hill with trees in the background and a stream of water
+${prompt}="a painting of a group of people sitting on a hill with trees in the background and a stream of water"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -142,7 +158,7 @@ a painting of a group of people sitting on a hill with trees in the background a
 | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/be0edf8d-62e3-4f1a-8090-433a4e7acb04" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/18c3dd5a-ff3e-4eb1-986c-1ad5e89adbdb" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/cd438ca1-f358-4a59-99e0-d728eaac0695" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/b64f1a60-6887-44d9-8a39-fb1b607af2f3" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/e1923489-e73f-4d34-8641-ce482cef2ce2" width="155" height="155" /> |
 
 ```bash
-a drawing of a village with a boat and a house in the background with a red ribbon on the bottom of the picture
+${prompt}="a drawing of a village with a boat and a house in the background with a red ribbon on the bottom of the picture"
 ```
 
 | PLMS | DDIM | DPM-Solver | DPM-Solver++ | UniPC |
@@ -156,7 +172,7 @@ We also show some text-to-image generation samples for the LoRA models trained b
 - pokemon dataset:
 
 ```bash
-a drawing of a black and gray dragon
+${prompt}="a drawing of a black and gray dragon"
 ```
 
 | Framework | PLMS | DDIM | DPM-Solver++ | UniPC |
@@ -165,7 +181,7 @@ a drawing of a black and gray dragon
 | Diffusers | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/0a7fa4e5-0f62-4985-8bc7-873a7a5e61a4" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/91b2fd08-d283-49e8-96a2-db15f8e93e23" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/ecc3676b-ca14-480e-8719-02694a176e9d" width="155" height="155" /> | <img src="https://github.com/zhaoyuzhi/mindone/assets/13333802/37430894-9d5c-4aa1-82d3-4b84464c5bf8" width="155" height="155" /> |
 
 ```bash
-a cartoon panda with a leaf in its mouth
+${prompt}="a cartoon panda with a leaf in its mouth"
 ```
 
 | Framework | PLMS | DDIM | DPM-Solver++ | UniPC |
@@ -176,7 +192,7 @@ a cartoon panda with a leaf in its mouth
 - chinese_art dataset:
 
 ```bash
-a painting of a landscape with a mountain in the background and a river running through it with a few people on it
+${prompt}="a painting of a landscape with a mountain in the background and a river running through it with a few people on it"
 ```
 
 | Framework | PLMS | DDIM | DPM-Solver++ | UniPC |
