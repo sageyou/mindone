@@ -197,7 +197,7 @@ class ModulesTest(unittest.TestCase):
         inputs_kwargs,
     ):
         dtype = "fp32"
-        ms.set_context(mode=ms.GRAPH_MODE)  # , jit_syntax_level=ms.STRICT)
+        ms.set_context(mode=ms.GRAPH_MODE, jit_syntax_level=ms.STRICT)
 
         (
             pt_model,
@@ -231,7 +231,7 @@ class ModulesTest(unittest.TestCase):
         inputs_kwargs,
     ):
         dtype = "fp16"
-        ms.set_context(mode=ms.GRAPH_MODE)  # , jit_syntax_level=ms.STRICT)
+        ms.set_context(mode=ms.GRAPH_MODE, jit_syntax_level=ms.STRICT)
 
         (
             pt_model,
