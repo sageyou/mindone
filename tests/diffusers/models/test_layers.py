@@ -28,10 +28,7 @@ MS_DTYPE_MAPPING = {
 }
 
 
-TORCH_FP16_BLACKLIST = (
-    torch.nn.LayerNorm,
-    diffusers.models.embeddings.Timesteps,
-)
+TORCH_FP16_BLACKLIST = ("LayerNorm", "Timesteps", "AvgPool2d", "Upsample2D", "ResnetBlock2D")
 
 
 def get_pt2ms_mappings(m):
@@ -99,7 +96,7 @@ def get_modules(pt_module, ms_module, dtype, *args, **kwargs):
 
     # Some torch modules do not support fp16 in CPU, converted to fp32 instead.
     for _, submodule in pt_modules_instance.named_modules():
-        if isinstance(submodule, TORCH_FP16_BLACKLIST):
+        if submodule.__class__.__name__ in TORCH_FP16_BLACKLIST:
             logger.warning(
                 f"Model '{pt_module}' has submodule {submodule.__class__.__name__} which doens't support fp16, converted to fp32 instead."
             )
@@ -181,6 +178,8 @@ def compute_diffs(pt_outputs: torch.Tensor, ms_outputs: ms.Tensor, relative=True
     return diffs
 
 
+# TODO: decouple with torch, maybe a feasible solution is fixing seed 
+# and comparing with fixed expected result, just like what diffusers does
 class ModulesTest(unittest.TestCase):
     # 1% relative error when FP32 and 2% when FP16
     eps = 0.01
