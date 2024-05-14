@@ -284,7 +284,7 @@ class KDownsample2D(nn.Cell):
         self.kernel = kernel_1d.T @ kernel_1d
 
     def construct(self, inputs: ms.Tensor) -> ms.Tensor:
-        inputs = ops.pad(inputs, (self.pad,) * 4, self.pad_mode)
+        inputs = ops.pad(inputs, (0, 0) * (inputs.ndim - 2) + (self.pad,) * 4, self.pad_mode)
         weight = inputs.new_zeros(
             [
                 inputs.shape[1],
