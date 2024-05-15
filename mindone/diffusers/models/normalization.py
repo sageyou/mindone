@@ -133,7 +133,7 @@ class AdaGroupNorm(nn.Cell):
         if act_fn is None:
             self.act = None
         else:
-            self.act = get_activation(act_fn)
+            self.act = get_activation(act_fn)()
 
         self.linear = nn.Dense(embedding_dim, out_dim * 2)
 
