@@ -3,7 +3,6 @@ import inspect
 import logging
 import unittest
 
-import diffusers
 import numpy as np
 import torch
 from parameterized import parameterized
@@ -28,7 +27,16 @@ MS_DTYPE_MAPPING = {
 }
 
 
-TORCH_FP16_BLACKLIST = ("LayerNorm", "Timesteps", "AvgPool2d", "Upsample2D", "ResnetBlock2D")
+TORCH_FP16_BLACKLIST = (
+    "LayerNorm",
+    "Timesteps",
+    "AvgPool2d",
+    "Upsample2D",
+    "ResnetBlock2D",
+    "FirUpsample2D",
+    "FirDownsample2D",
+    "KDownsample2D",
+)
 
 
 def get_pt2ms_mappings(m):
@@ -94,6 +102,9 @@ def get_modules(pt_module, ms_module, dtype, *args, **kwargs):
     pt_modules_instance.eval()
     ms_modules_instance.set_train(False)
 
+    if dtype == "fp32":
+        return pt_modules_instance, ms_modules_instance, pt_dtype, ms_dtype
+    
     # Some torch modules do not support fp16 in CPU, converted to fp32 instead.
     for _, submodule in pt_modules_instance.named_modules():
         if submodule.__class__.__name__ in TORCH_FP16_BLACKLIST:

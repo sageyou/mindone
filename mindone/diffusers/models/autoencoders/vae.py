@@ -331,7 +331,7 @@ class VectorQuantizer(nn.Cell):
         self.legacy = legacy
 
         self.embedding = nn.Embedding(self.n_e, self.vq_embed_dim)
-        self.embedding.embedding_table.set_dtype(
+        self.embedding.embedding_table.set_data(
             ops.uniform(self.embedding.embedding_table.shape, ms.Tensor(-1.0 / self.n_e), ms.Tensor(1.0 / self.n_e))
         )
 
@@ -379,11 +379,11 @@ class VectorQuantizer(nn.Cell):
 
     def construct(self, z: ms.Tensor) -> Tuple[ms.Tensor, ms.Tensor, Tuple]:
         # reshape z -> (batch, height, width, channel) and flatten
-        z = z.permute(0, 2, 3, 1).contiguous()
+        z = z.permute(0, 2, 3, 1)
         z_flattened = z.view(-1, self.vq_embed_dim)
 
         # distances from z to embeddings e_j (z - e)^2 = z^2 + e^2 - 2 e * z
-        min_encoding_indices = ops.argmin(ops.cdist(z_flattened, self.embedding.weight), axis=1)
+        min_encoding_indices = ops.argmin(ops.cdist(z_flattened, self.embedding.embedding_table), axis=1)
 
         z_q = self.embedding(min_encoding_indices).view(z.shape)
         perplexity = None
@@ -396,7 +396,7 @@ class VectorQuantizer(nn.Cell):
             loss = ops.mean((ops.stop_gradient(z_q) - z) ** 2) + self.beta * ops.mean((z_q - ops.stop_gradient(z)) ** 2)
 
         # preserve gradients
-        z_q: ms.Tensor = z + ops.stop_gradient(z_q - z)
+        z_q = z + ops.stop_gradient(z_q - z)
 
         # reshape back to match original input shape
         z_q = z_q.permute(0, 3, 1, 2)
@@ -419,7 +419,7 @@ class VectorQuantizer(nn.Cell):
             indices = indices.reshape(-1)  # flatten again
 
         # get quantized latent vectors
-        z_q: ms.Tensor = self.embedding(indices)
+        z_q = self.embedding(indices)
 
         if shape is not None:
             z_q = z_q.view(shape)

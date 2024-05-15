@@ -124,7 +124,7 @@ class ResnetBlockCondNorm2D(nn.Cell):
             out_channels, conv_2d_out_channels, kernel_size=3, stride=1, pad_mode="pad", padding=1, has_bias=True
         )
 
-        self.nonlinearity = get_activation(non_linearity)
+        self.nonlinearity = get_activation(non_linearity)()
 
         self.upsample = self.downsample = None
         if self.up:
@@ -401,7 +401,7 @@ class Conv1dBlock(nn.Cell):
             inp_channels, out_channels, kernel_size, pad_mode="pad", padding=kernel_size // 2, has_bias=True
         )
         self.group_norm = GroupNorm(n_groups, out_channels)
-        self.mish = get_activation(activation)
+        self.mish = get_activation(activation)()
 
     def construct(self, inputs: ms.Tensor) -> ms.Tensor:
         intermediate_repr = self.conv1d(inputs)
@@ -437,7 +437,7 @@ class ResidualTemporalBlock1D(nn.Cell):
         self.conv_in = Conv1dBlock(inp_channels, out_channels, kernel_size)
         self.conv_out = Conv1dBlock(out_channels, out_channels, kernel_size)
 
-        self.time_emb_act = get_activation(activation)
+        self.time_emb_act = get_activation(activation)()
         self.time_emb = nn.Dense(embed_dim, out_channels)
 
         self.residual_conv = (
@@ -489,30 +489,26 @@ class TemporalConvLayer(nn.Cell):
         self.conv1 = nn.SequentialCell(
             GroupNorm(norm_num_groups, in_dim),
             nn.SiLU(),
-            nn.Conv3d(in_dim, out_dim, (3, 1, 1), padding=(1, 0, 0), pad_mode="pad", has_bias=True),
+            nn.Conv3d(in_dim, out_dim, (3, 1, 1), padding=(1, 1, 0, 0, 0, 0), pad_mode="pad", has_bias=True),
         )
         self.conv2 = nn.SequentialCell(
             GroupNorm(norm_num_groups, out_dim),
             nn.SiLU(),
             nn.Dropout(p=dropout),
-            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0), pad_mode="pad", has_bias=True),
+            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 1, 0, 0, 0, 0), pad_mode="pad", has_bias=True),
         )
         self.conv3 = nn.SequentialCell(
-            nn.GroupNorm(norm_num_groups, out_dim),
+            GroupNorm(norm_num_groups, out_dim),
             nn.SiLU(),
             nn.Dropout(p=dropout),
-            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0), pad_mode="pad", has_bias=True),
+            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 1, 0, 0, 0, 0), pad_mode="pad", has_bias=True),
         )
         self.conv4 = nn.SequentialCell(
-            nn.GroupNorm(norm_num_groups, out_dim),
+            GroupNorm(norm_num_groups, out_dim),
             nn.SiLU(),
             nn.Dropout(p=dropout),
-            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 0, 0), pad_mode="pad", has_bias=True),
+            nn.Conv3d(out_dim, in_dim, (3, 1, 1), padding=(1, 1, 0, 0, 0, 0), pad_mode="pad", has_bias=True, weight_init='zeros', bias_init='zeros'),
         )
-
-        # zero out the last layer params,so the conv block is identity
-        self.conv4[-1].weight.set_data(ops.zeros_like(self.conv4[-1].weight))
-        self.conv4[-1].bias.set_data(ops.zeros_like(self.conv4[-1].bias))
 
     def construct(self, hidden_states: ms.Tensor, num_frames: int = 1) -> ms.Tensor:
         hidden_states = (
@@ -560,7 +556,8 @@ class TemporalResnetBlock(nn.Cell):
         self.out_channels = out_channels
 
         kernel_size = (3, 1, 1)
-        padding = [k // 2 for k in kernel_size]
+        # padding = [k // 2 for k in kernel_size]
+        padding = (1, 1, 0, 0, 0, 0)
 
         self.norm1 = GroupNorm(num_groups=32, num_channels=in_channels, eps=eps, affine=True)
         self.conv1 = nn.Conv3d(
@@ -591,7 +588,7 @@ class TemporalResnetBlock(nn.Cell):
             has_bias=True,
         )
 
-        self.nonlinearity = get_activation("silu")
+        self.nonlinearity = get_activation("silu")()
 
         self.use_in_shortcut = self.in_channels != out_channels
 
