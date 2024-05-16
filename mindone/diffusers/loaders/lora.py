@@ -697,7 +697,7 @@ class LoraLoaderMixin:
             if safe_serialization:
 
                 def save_function(weights, filename):
-                    return save_file(weights, filename, metadata={"format": "pt"})
+                    return save_file(weights, filename, metadata={"format": "np"})
 
             else:
                 save_function = ms.save_checkpoint
