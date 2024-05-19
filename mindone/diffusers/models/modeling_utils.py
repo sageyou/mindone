@@ -111,7 +111,7 @@ def _convert_state_dict(m, state_dict_pt):
 
 def _load_state_dict_into_model(model_to_load, state_dict: OrderedDict) -> List[str]:
     error_msgs = []
-    param_not_load, ckpt_not_load = ms.load_param_into_net(model_to_load, state_dict, strict_load=True)
+    param_not_load, ckpt_not_load = ms.load_param_into_net(model_to_load, state_dict, strict_load=False)
     if param_not_load:
         error_msgs.append(f"{param_not_load} in network is not loaded!")
     if ckpt_not_load:
