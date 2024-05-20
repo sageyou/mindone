@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import nn, ops
 
 from ..configuration_utils import ConfigMixin, register_to_config
+from ..loaders import FromOriginalControlNetMixin
 from ..utils import BaseOutput, logging
 from .attention_processor import CROSS_ATTENTION_PROCESSORS, AttentionProcessor, AttnProcessor
 from .embeddings import TextImageProjection, TextImageTimeEmbedding, TextTimeEmbedding, TimestepEmbedding, Timesteps
@@ -112,7 +113,7 @@ class ControlNetConditioningEmbedding(nn.Cell):
         return embedding
 
 
-class ControlNetModel(ModelMixin, ConfigMixin):
+class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalControlNetMixin):
     """
     A ControlNet model.
 

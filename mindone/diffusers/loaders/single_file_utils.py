@@ -24,11 +24,12 @@ import yaml
 
 from transformers import CLIPTextConfig, CLIPTokenizer
 
+import mindspore as ms
 from mindspore import Parameter
 
 from mindone.transformers import CLIPTextModel, CLIPTextModelWithProjection
 
-from ..models.modeling_utils import _convert_state_dict, load_state_dict, _load_state_dict_into_model
+from ..models.modeling_utils import _convert_state_dict, load_state_dict
 from ..schedulers import (
     DDIMScheduler,
     DDPMScheduler,
@@ -965,8 +966,8 @@ def create_diffusers_controlnet_model_from_ldm(
     diffusers_config["upcast_attention"] = upcast_attention
 
     diffusers_format_controlnet_checkpoint = convert_controlnet_checkpoint(checkpoint, diffusers_config)
-    controlnet = ControlNetModel(**diffusers_config)    
-    controlnet.load_state_dict(diffusers_format_controlnet_checkpoint)
+    controlnet = ControlNetModel(**diffusers_config)
+    ms.load_param_into_net(controlnet, diffusers_format_controlnet_checkpoint)
 
     if mindspore_dtype is not None:
         controlnet = controlnet.to(mindspore_dtype)
@@ -1130,7 +1131,7 @@ def create_text_encoder_from_ldm_clip_checkpoint(config_name, checkpoint, local_
     if not (hasattr(text_model, "embeddings") and hasattr(text_model.embeddings.position_ids)):
         text_model_dict.pop("text_model.embeddings.position_ids", None)
     text_model_dict_ms = _convert_state_dict(text_model, text_model_dict)
-    _load_state_dict_into_model(text_model, text_model_dict_ms)
+    ms.load_param_into_net(text_model, text_model_dict_ms)
 
     if mindspore_dtype is not None:
         text_model = text_model.to(mindspore_dtype)
@@ -1210,8 +1211,8 @@ def create_text_encoder_from_open_clip_checkpoint(
  
     if not (hasattr(text_model, "embeddings") and hasattr(text_model.embeddings.position_ids)):
         text_model_dict.pop("text_model.embeddings.position_ids", None)
-    text_model_dict_ms = _convert_state_dict(text_model_dict)
-    _load_state_dict_into_model(text_model, text_model_dict_ms)
+    text_model_dict_ms = _convert_state_dict(text_model, text_model_dict)
+    ms.load_param_into_net(text_model, text_model_dict_ms)
 
     if mindspore_dtype is not None:
         text_model = text_model.to(mindspore_dtype)
@@ -1258,7 +1259,7 @@ def create_diffusers_unet_model_from_ldm(
     diffusers_format_unet_checkpoint = convert_ldm_unet_checkpoint(checkpoint, unet_config, extract_ema=extract_ema)
 
     unet = UNet2DConditionModel(**unet_config)
-    _load_state_dict_into_model(unet, diffusers_format_unet_checkpoint)
+    ms.load_param_into_net(unet, diffusers_format_unet_checkpoint)
 
     if mindspore_dtype is not None:
         unet = unet.to(mindspore_dtype)
@@ -1303,7 +1304,7 @@ def create_diffusers_vae_model_from_ldm(
     )
     diffusers_format_vae_checkpoint = convert_ldm_vae_checkpoint(checkpoint, vae_config)
     vae = AutoencoderKL(**vae_config)
-    _load_state_dict_into_model(vae, diffusers_format_vae_checkpoint)
+    ms.load_param_into_net(vae, diffusers_format_vae_checkpoint)
 
     if mindspore_dtype is not None:
         vae = vae.to(mindspore_dtype)

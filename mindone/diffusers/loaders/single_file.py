@@ -52,7 +52,6 @@ def build_sub_model_components(
 ):
     if component_name in pipeline_components:
         return {}
-    print("====beigin build the component: ", component_name)
     if component_name == "unet":
         num_in_channels = kwargs.pop("num_in_channels", None)
         upcast_attention = kwargs.pop("upcast_attention", None)
@@ -97,15 +96,15 @@ def build_sub_model_components(
 
         return scheduler_components
 
-    # if component_name in ["text_encoder", "text_encoder_2", "tokenizer", "tokenizer_2"]:
-    #     text_encoder_components = create_text_encoders_and_tokenizers_from_ldm(
-    #         original_config,
-    #         checkpoint,
-    #         model_type=model_type,
-    #         local_files_only=local_files_only,
-    #         mindspore_dtype=mindspore_dtype,
-    #     )
-    #     return text_encoder_components
+    if component_name in ["text_encoder", "text_encoder_2", "tokenizer", "tokenizer_2"]:
+        text_encoder_components = create_text_encoders_and_tokenizers_from_ldm(
+            original_config,
+            checkpoint,
+            model_type=model_type,
+            local_files_only=local_files_only,
+            mindspore_dtype=mindspore_dtype,
+        )
+        return text_encoder_components
 
     if component_name == "safety_checker":
         if load_safety_checker:
