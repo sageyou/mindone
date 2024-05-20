@@ -15,9 +15,14 @@ _import_structure = {
     "configuration_utils": ["ConfigMixin"],
     "models": [
         "AutoencoderKL",
+        "ControlNetModel",
         "ModelMixin",
+        "MultiAdapter",
+        "T2IAdapter",
+        "Transformer2DModel",
         "UNet2DConditionModel",
         "UNet2DModel",
+        "VQModel",
     ],
     "optimization": [
         "get_constant_schedule",
@@ -74,7 +79,17 @@ _import_structure = {
 
 if TYPE_CHECKING:
     from .configuration_utils import ConfigMixin
-    from .models import AutoencoderKL, ModelMixin, UNet2DConditionModel, UNet2DModel
+    from .models import (
+        AutoencoderKL,
+        ControlNetModel,
+        ModelMixin,
+        MultiAdapter,
+        T2IAdapter,
+        Transformer2DModel,
+        UNet2DConditionModel,
+        UNet2DModel,
+        VQModel,
+    )
     from .optimization import (
         get_constant_schedule,
         get_constant_schedule_with_warmup,
