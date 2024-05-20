@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from huggingface_hub.utils import validate_hf_hub_args
+from transformers import AutoFeatureExtractor
 
 from ..utils import logging
 from .single_file_utils import (
@@ -24,7 +25,6 @@ from .single_file_utils import (
     infer_model_type,
 )
 
-
 logger = logging.get_logger(__name__)
 
 # Pipelines that support the SDXL Refiner checkpoint
@@ -32,9 +32,6 @@ REFINER_PIPELINES = [
     "StableDiffusionXLImg2ImgPipeline",
     "StableDiffusionXLInpaintPipeline",
 ]
-
-
-from transformers import AutoFeatureExtractor
 
 
 def build_sub_model_components(
@@ -111,7 +108,9 @@ def build_sub_model_components(
             from ..pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 
             safety_checker = StableDiffusionSafetyChecker.from_pretrained(
-                "CompVis/stable-diffusion-safety-checker", local_files_only=local_files_only, mindspore_dtype=mindspore_dtype
+                "CompVis/stable-diffusion-safety-checker",
+                local_files_only=local_files_only,
+                mindspore_dtype=mindspore_dtype,
             )
         else:
             safety_checker = None
@@ -167,8 +166,8 @@ class FromSingleFileMixin:
                     - A link to the `.ckpt` file (for example
                       `"https://huggingface.co/<repo_id>/blob/main/<path_to_file>.ckpt"`) on the Hub.
                     - A path to a *file* containing all pipeline weights.
-            mindspore_dtype (`str` or `torch.dtype`, *optional*):
-                Override the default `torch.dtype` and load the model with another dtype.
+            mindspore_dtype (`str` or `mindspore.dtype`, *optional*):
+                Override the default `mindspore.dtype` and load the model with another dtype.
             force_download (`bool`, *optional*, defaults to `False`):
                 Whether or not to force the (re-)download of the model weights and configuration files, overriding the
                 cached versions if they exist.
@@ -198,7 +197,8 @@ class FromSingleFileMixin:
             image_size (`int`, *optional*):
                 The size of the image output. It's used to configure the `sample_size` parameter of the UNet and VAE model.
             load_safety_checker (`bool`, *optional*, defaults to `False`):
-                Whether to load the safety checker model or not. By default, the safety checker is not loaded unless a `safety_checker` component is passed to the `kwargs`.
+                Whether to load the safety checker model or not.
+                By default, the safety checker is not loaded unless a `safety_checker` component is passed to the `kwargs`.
             num_in_channels (`int`, *optional*):
                 Specify the number of input channels for the UNet model. Read more about how to configure UNet model with this parameter
                 [here](https://huggingface.co/docs/diffusers/training/adapt_a_model#configure-unet2dconditionmodel-parameters).
@@ -217,7 +217,7 @@ class FromSingleFileMixin:
         Examples:
 
         ```py
-        >>> from diffusers import StableDiffusionPipeline
+        >>> from mindone.diffusers import StableDiffusionPipeline
 
         >>> # Download pipeline from huggingface.co and cache.
         >>> pipeline = StableDiffusionPipeline.from_single_file(
@@ -227,13 +227,6 @@ class FromSingleFileMixin:
         >>> # Download pipeline from local file
         >>> # file is downloaded under ./v1-5-pruned-emaonly.ckpt
         >>> pipeline = StableDiffusionPipeline.from_single_file("./v1-5-pruned-emaonly")
-
-        >>> # Enable float16 and move to GPU
-        >>> pipeline = StableDiffusionPipeline.from_single_file(
-        ...     "https://huggingface.co/runwayml/stable-diffusion-v1-5/blob/main/v1-5-pruned-emaonly.ckpt",
-        ...     mindspore_dtype=torch.float16,
-        ... )
-        >>> pipeline.to("cuda")
         ```
         """
         original_config_file = kwargs.pop("original_config_file", None)
@@ -309,8 +302,5 @@ class FromSingleFileMixin:
 
         init_kwargs.update(passed_pipe_kwargs)
         pipe = pipeline_class(**init_kwargs)
-
-        if mindspore_dtype is not None:
-            pipe.to(dtype=mindspore_dtype)
 
         return pipe

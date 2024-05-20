@@ -21,7 +21,6 @@ from urllib.parse import urlparse
 
 import requests
 import yaml
-
 from transformers import CLIPTextConfig, CLIPTokenizer
 
 import mindspore as ms
@@ -43,7 +42,6 @@ from ..schedulers import (
 )
 from ..utils import logging
 from ..utils.hub_utils import _get_model_file
-
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -541,9 +539,7 @@ def create_unet_diffusers_config(original_config, image_size: int):
 
     if unet_params["context_dim"] is not None:
         context_dim = (
-            unet_params["context_dim"]
-            if isinstance(unet_params["context_dim"], int)
-            else unet_params["context_dim"][0]
+            unet_params["context_dim"] if isinstance(unet_params["context_dim"], int) else unet_params["context_dim"][0]
         )
 
     if "num_classes" in unet_params:
@@ -1112,7 +1108,8 @@ def create_text_encoder_from_ldm_clip_checkpoint(config_name, checkpoint, local_
         config = CLIPTextConfig.from_pretrained(config_name, local_files_only=local_files_only)
     except Exception:
         raise ValueError(
-            f"With local_files_only set to {local_files_only}, you must first locally save the configuration in the following path: 'openai/clip-vit-large-patch14'."
+            f"With local_files_only set to {local_files_only}, you must first locally save the configuration
+            in the following path:'openai/clip-vit-large-patch14'."
         )
 
     text_model = CLIPTextModel(config)
@@ -1197,7 +1194,9 @@ def create_text_encoder_from_open_clip_checkpoint(
             weight_value = checkpoint[key]
 
             text_model_dict[diffusers_key + ".q_proj.weight"] = Parameter(weight_value[:text_proj_dim, :])
-            text_model_dict[diffusers_key + ".k_proj.weight"] = Parameter(weight_value[text_proj_dim : text_proj_dim * 2, :])
+            text_model_dict[diffusers_key + ".k_proj.weight"] = Parameter(
+                weight_value[text_proj_dim : text_proj_dim * 2, :]
+            )
             text_model_dict[diffusers_key + ".v_proj.weight"] = Parameter(weight_value[text_proj_dim * 2 :, :])
 
         elif key.endswith(".in_proj_bias"):
@@ -1208,7 +1207,6 @@ def create_text_encoder_from_open_clip_checkpoint(
         else:
             text_model_dict[diffusers_key] = checkpoint[key]
 
- 
     if not (hasattr(text_model, "embeddings") and hasattr(text_model.embeddings.position_ids)):
         text_model_dict.pop("text_model.embeddings.position_ids", None)
     text_model_dict_ms = _convert_state_dict(text_model, text_model_dict)
@@ -1286,10 +1284,14 @@ def create_diffusers_vae_model_from_ldm(
 
     if model_type == "Playground":
         edm_mean = (
-            checkpoint["edm_mean"].to(dtype=mindspore_dtype).tolist() if mindspore_dtype else checkpoint["edm_mean"].tolist()
+            checkpoint["edm_mean"].to(dtype=mindspore_dtype).tolist()
+            if mindspore_dtype
+            else checkpoint["edm_mean"].tolist()
         )
         edm_std = (
-            checkpoint["edm_std"].to(dtype=mindspore_dtype).tolist() if mindspore_dtype else checkpoint["edm_std"].tolist()
+            checkpoint["edm_std"].to(dtype=mindspore_dtype).tolist()
+            if mindspore_dtype
+            else checkpoint["edm_std"].tolist()
         )
     else:
         edm_mean = None
@@ -1327,7 +1329,11 @@ def create_text_encoders_and_tokenizers_from_ldm(
 
         try:
             text_encoder = create_text_encoder_from_open_clip_checkpoint(
-                config_name, checkpoint, local_files_only=local_files_only, mindspore_dtype=mindspore_dtype, **config_kwargs
+                config_name,
+                checkpoint,
+                local_files_only=local_files_only,
+                mindspore_dtype=mindspore_dtype,
+                **config_kwargs,
             )
             tokenizer = CLIPTokenizer.from_pretrained(
                 config_name, subfolder="tokenizer", local_files_only=local_files_only
@@ -1375,7 +1381,8 @@ def create_text_encoders_and_tokenizers_from_ldm(
             )
         except Exception:
             raise ValueError(
-                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2 in the following path: {config_name} with `pad_token` set to '!'."
+                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2
+                in the following path: {config_name} with `pad_token` set to '!'."
             )
 
         else:
@@ -1396,7 +1403,8 @@ def create_text_encoders_and_tokenizers_from_ldm(
 
         except Exception:
             raise ValueError(
-                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder and tokenizer in the following path: 'openai/clip-vit-large-patch14'."
+                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder and tokenizer
+                in the following path: 'openai/clip-vit-large-patch14'."
             )
 
         try:
@@ -1415,7 +1423,8 @@ def create_text_encoders_and_tokenizers_from_ldm(
             )
         except Exception:
             raise ValueError(
-                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2 in the following path: {config_name} with `pad_token` set to '!'."
+                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2
+                in the following path: {config_name} with `pad_token` set to '!'."
             )
 
         return {

@@ -14,10 +14,7 @@
 
 from huggingface_hub.utils import validate_hf_hub_args
 
-from .single_file_utils import (
-    create_diffusers_controlnet_model_from_ldm,
-    fetch_ldm_config_and_checkpoint,
-)
+from .single_file_utils import create_diffusers_controlnet_model_from_ldm, fetch_ldm_config_and_checkpoint
 
 
 class FromOriginalControlNetMixin:
@@ -41,8 +38,8 @@ class FromOriginalControlNetMixin:
             config_file (`str`, *optional*):
                 Filepath to the configuration YAML file associated with the model. If not provided it will default to:
                 https://raw.githubusercontent.com/lllyasviel/ControlNet/main/models/cldm_v15.yaml
-            torch_dtype (`str` or `torch.dtype`, *optional*):
-                Override the default `torch.dtype` and load the model with another dtype. If `"auto"` is passed, the
+            mindspore_dtype (`str` or `mindspore.dtype`, *optional*):
+                Override the default `mindspore.dtype` and load the model with another dtype. If `"auto"` is passed, the
                 dtype is automatically derived from the model's weights.
             force_download (`bool`, *optional*, defaults to `False`):
                 Whether or not to force the (re-)download of the model weights and configuration files, overriding the
@@ -78,7 +75,7 @@ class FromOriginalControlNetMixin:
         Examples:
 
         ```py
-        from diffusers import StableDiffusionControlNetPipeline, ControlNetModel
+        from mindone.diffusers import StableDiffusionControlNetPipeline, ControlNetModel
 
         url = "https://huggingface.co/lllyasviel/ControlNet-v1-1/blob/main/control_v11p_sd15_canny.pth"  # can also be a local path
         model = ControlNetModel.from_single_file(url)

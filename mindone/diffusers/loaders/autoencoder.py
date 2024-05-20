@@ -14,10 +14,7 @@
 
 from huggingface_hub.utils import validate_hf_hub_args
 
-from .single_file_utils import (
-    create_diffusers_vae_model_from_ldm,
-    fetch_ldm_config_and_checkpoint,
-)
+from .single_file_utils import create_diffusers_vae_model_from_ldm, fetch_ldm_config_and_checkpoint
 
 
 class FromOriginalVAEMixin:
@@ -41,7 +38,7 @@ class FromOriginalVAEMixin:
             config_file (`str`, *optional*):
                 Filepath to the configuration YAML file associated with the model. If not provided it will default to:
                 https://raw.githubusercontent.com/CompVis/stable-diffusion/main/configs/stable-diffusion/v1-inference.yaml
-            mindspore_dtype (`str` or `torch.dtype`, *optional*):
+            mindspore_dtype (`str` or `mindspore.dtype`, *optional*):
                 Override the default `mindspore_dtype` and load the model with another dtype. If `"auto"` is passed, the
                 dtype is automatically derived from the model's weights.
             force_download (`bool`, *optional*, defaults to `False`):
@@ -90,7 +87,7 @@ class FromOriginalVAEMixin:
         Examples:
 
         ```py
-        from diffusers import AutoencoderKL
+        from mindone.diffusers import AutoencoderKL
 
         url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/blob/main/vae-ft-mse-840000-ema-pruned.safetensors"  # can also be local file
         model = AutoencoderKL.from_single_file(url)
