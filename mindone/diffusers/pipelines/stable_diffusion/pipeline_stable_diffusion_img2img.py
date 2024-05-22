@@ -27,7 +27,7 @@ from mindone.transformers import CLIPTextModel, CLIPVisionModelWithProjection
 
 from ...configuration_utils import FrozenDict
 from ...image_processor import PipelineImageInput, VaeImageProcessor
-from ...loaders import FromSingleFileMixin, LoraLoaderMixin, TextualInversionLoaderMixin
+from ...loaders import FromSingleFileMixin, IPAdapterMixin, LoraLoaderMixin, TextualInversionLoaderMixin
 from ...models import AutoencoderKL, ImageProjection, UNet2DConditionModel
 from ...schedulers import KarrasDiffusionSchedulers
 from ...utils import PIL_INTERPOLATION, deprecate, logging, scale_lora_layers, unscale_lora_layers
@@ -143,6 +143,7 @@ def retrieve_timesteps(
 
 class StableDiffusionImg2ImgPipeline(
     DiffusionPipeline,
+    IPAdapterMixin,
     TextualInversionLoaderMixin,
     LoraLoaderMixin,
     FromSingleFileMixin,

@@ -75,86 +75,6 @@ SCHEDULER_DEFAULT_CONFIG = {
 }
 
 
-STABLE_CASCADE_DEFAULT_CONFIGS = {
-    "stage_c": {"pretrained_model_name_or_path": "diffusers/stable-cascade-configs", "subfolder": "prior"},
-    "stage_c_lite": {"pretrained_model_name_or_path": "diffusers/stable-cascade-configs", "subfolder": "prior_lite"},
-    "stage_b": {"pretrained_model_name_or_path": "diffusers/stable-cascade-configs", "subfolder": "decoder"},
-    "stage_b_lite": {"pretrained_model_name_or_path": "diffusers/stable-cascade-configs", "subfolder": "decoder_lite"},
-}
-
-
-def convert_stable_cascade_unet_single_file_to_diffusers(original_state_dict):
-    is_stage_c = "clip_txt_mapper.weight" in original_state_dict
-
-    if is_stage_c:
-        state_dict = {}
-        for key in original_state_dict.keys():
-            if key.endswith("in_proj_weight"):
-                weights = original_state_dict[key].chunk(3, 0)
-                state_dict[key.replace("attn.in_proj_weight", "to_q.weight")] = weights[0]
-                state_dict[key.replace("attn.in_proj_weight", "to_k.weight")] = weights[1]
-                state_dict[key.replace("attn.in_proj_weight", "to_v.weight")] = weights[2]
-            elif key.endswith("in_proj_bias"):
-                weights = original_state_dict[key].chunk(3, 0)
-                state_dict[key.replace("attn.in_proj_bias", "to_q.bias")] = weights[0]
-                state_dict[key.replace("attn.in_proj_bias", "to_k.bias")] = weights[1]
-                state_dict[key.replace("attn.in_proj_bias", "to_v.bias")] = weights[2]
-            elif key.endswith("out_proj.weight"):
-                weights = original_state_dict[key]
-                state_dict[key.replace("attn.out_proj.weight", "to_out.0.weight")] = weights
-            elif key.endswith("out_proj.bias"):
-                weights = original_state_dict[key]
-                state_dict[key.replace("attn.out_proj.bias", "to_out.0.bias")] = weights
-            else:
-                state_dict[key] = original_state_dict[key]
-    else:
-        state_dict = {}
-        for key in original_state_dict.keys():
-            if key.endswith("in_proj_weight"):
-                weights = original_state_dict[key].chunk(3, 0)
-                state_dict[key.replace("attn.in_proj_weight", "to_q.weight")] = weights[0]
-                state_dict[key.replace("attn.in_proj_weight", "to_k.weight")] = weights[1]
-                state_dict[key.replace("attn.in_proj_weight", "to_v.weight")] = weights[2]
-            elif key.endswith("in_proj_bias"):
-                weights = original_state_dict[key].chunk(3, 0)
-                state_dict[key.replace("attn.in_proj_bias", "to_q.bias")] = weights[0]
-                state_dict[key.replace("attn.in_proj_bias", "to_k.bias")] = weights[1]
-                state_dict[key.replace("attn.in_proj_bias", "to_v.bias")] = weights[2]
-            elif key.endswith("out_proj.weight"):
-                weights = original_state_dict[key]
-                state_dict[key.replace("attn.out_proj.weight", "to_out.0.weight")] = weights
-            elif key.endswith("out_proj.bias"):
-                weights = original_state_dict[key]
-                state_dict[key.replace("attn.out_proj.bias", "to_out.0.bias")] = weights
-            # rename clip_mapper to clip_txt_pooled_mapper
-            elif key.endswith("clip_mapper.weight"):
-                weights = original_state_dict[key]
-                state_dict[key.replace("clip_mapper.weight", "clip_txt_pooled_mapper.weight")] = weights
-            elif key.endswith("clip_mapper.bias"):
-                weights = original_state_dict[key]
-                state_dict[key.replace("clip_mapper.bias", "clip_txt_pooled_mapper.bias")] = weights
-            else:
-                state_dict[key] = original_state_dict[key]
-
-    return state_dict
-
-
-def infer_stable_cascade_single_file_config(checkpoint):
-    is_stage_c = "clip_txt_mapper.weight" in checkpoint
-    is_stage_b = "down_blocks.1.0.channelwise.0.weight" in checkpoint
-
-    if is_stage_c and (checkpoint["clip_txt_mapper.weight"].shape[0] == 1536):
-        config_type = "stage_c_lite"
-    elif is_stage_c and (checkpoint["clip_txt_mapper.weight"].shape[0] == 2048):
-        config_type = "stage_c"
-    elif is_stage_b and checkpoint["down_blocks.1.0.channelwise.0.weight"].shape[-1] == 576:
-        config_type = "stage_b_lite"
-    elif is_stage_b and checkpoint["down_blocks.1.0.channelwise.0.weight"].shape[-1] == 640:
-        config_type = "stage_b"
-
-    return STABLE_CASCADE_DEFAULT_CONFIGS[config_type]
-
-
 DIFFUSERS_TO_LDM_MAPPING = {
     "unet": {
         "layers": {
@@ -963,7 +883,7 @@ def create_diffusers_controlnet_model_from_ldm(
 
     diffusers_format_controlnet_checkpoint = convert_controlnet_checkpoint(checkpoint, diffusers_config)
     controlnet = ControlNetModel(**diffusers_config)
-    ms.load_param_into_net(controlnet, diffusers_format_controlnet_checkpoint)
+    _load_param_into_net(controlnet, diffusers_format_controlnet_checkpoint)
 
     if mindspore_dtype is not None:
         controlnet = controlnet.to(mindspore_dtype)
@@ -1108,7 +1028,7 @@ def create_text_encoder_from_ldm_clip_checkpoint(config_name, checkpoint, local_
         config = CLIPTextConfig.from_pretrained(config_name, local_files_only=local_files_only)
     except Exception:
         raise ValueError(
-            f"With local_files_only set to {local_files_only}, you must first locally save the configuration
+            f"With local_files_only set to {local_files_only}, you must first locally save the configuration \
             in the following path:'openai/clip-vit-large-patch14'."
         )
 
@@ -1128,7 +1048,7 @@ def create_text_encoder_from_ldm_clip_checkpoint(config_name, checkpoint, local_
     if not (hasattr(text_model, "embeddings") and hasattr(text_model.embeddings.position_ids)):
         text_model_dict.pop("text_model.embeddings.position_ids", None)
     text_model_dict_ms = _convert_state_dict(text_model, text_model_dict)
-    ms.load_param_into_net(text_model, text_model_dict_ms)
+    _load_param_into_net(text_model, text_model_dict_ms)
 
     if mindspore_dtype is not None:
         text_model = text_model.to(mindspore_dtype)
@@ -1257,7 +1177,7 @@ def create_diffusers_unet_model_from_ldm(
     diffusers_format_unet_checkpoint = convert_ldm_unet_checkpoint(checkpoint, unet_config, extract_ema=extract_ema)
 
     unet = UNet2DConditionModel(**unet_config)
-    ms.load_param_into_net(unet, diffusers_format_unet_checkpoint)
+    _load_param_into_net(unet, diffusers_format_unet_checkpoint)
 
     if mindspore_dtype is not None:
         unet = unet.to(mindspore_dtype)
@@ -1306,7 +1226,7 @@ def create_diffusers_vae_model_from_ldm(
     )
     diffusers_format_vae_checkpoint = convert_ldm_vae_checkpoint(checkpoint, vae_config)
     vae = AutoencoderKL(**vae_config)
-    ms.load_param_into_net(vae, diffusers_format_vae_checkpoint)
+    _load_param_into_net(vae, diffusers_format_vae_checkpoint)
 
     if mindspore_dtype is not None:
         vae = vae.to(mindspore_dtype)
@@ -1381,7 +1301,7 @@ def create_text_encoders_and_tokenizers_from_ldm(
             )
         except Exception:
             raise ValueError(
-                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2
+                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2 \
                 in the following path: {config_name} with `pad_token` set to '!'."
             )
 
@@ -1403,7 +1323,7 @@ def create_text_encoders_and_tokenizers_from_ldm(
 
         except Exception:
             raise ValueError(
-                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder and tokenizer
+                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder and tokenizer \
                 in the following path: 'openai/clip-vit-large-patch14'."
             )
 
@@ -1423,7 +1343,7 @@ def create_text_encoders_and_tokenizers_from_ldm(
             )
         except Exception:
             raise ValueError(
-                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2
+                f"With local_files_only set to {local_files_only}, you must first locally save the text_encoder_2 and tokenizer_2 \
                 in the following path: {config_name} with `pad_token` set to '!'."
             )
 
@@ -1537,3 +1457,12 @@ def create_scheduler_from_ldm(
         }
 
     return {"scheduler": scheduler}
+
+
+def _load_param_into_net(model, state_dict):
+    model_dtype = next(iter(model.get_parameters())).dtype
+    for _, v in state_dict.items():
+        v.set_dtype(model_dtype)
+    _, ckpt_not_load = ms.load_param_into_net(model, state_dict, strict_load=True)
+    if len(ckpt_not_load) > 0:
+        logger.info("checkpoint params not loaded: {}".format([p for p in ckpt_not_load]))

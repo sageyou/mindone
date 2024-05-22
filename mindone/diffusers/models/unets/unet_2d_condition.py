@@ -357,30 +357,6 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
             down_blocks.append(down_block)
         self.down_blocks = nn.CellList(down_blocks)
 
-        # mid
-        self.mid_block = get_mid_block(
-            mid_block_type,
-            temb_channels=blocks_time_embed_dim,
-            in_channels=block_out_channels[-1],
-            resnet_eps=norm_eps,
-            resnet_act_fn=act_fn,
-            resnet_groups=norm_num_groups,
-            output_scale_factor=mid_block_scale_factor,
-            transformer_layers_per_block=transformer_layers_per_block[-1],
-            num_attention_heads=num_attention_heads[-1],
-            cross_attention_dim=cross_attention_dim[-1],
-            dual_cross_attention=dual_cross_attention,
-            use_linear_projection=use_linear_projection,
-            mid_block_only_cross_attention=mid_block_only_cross_attention,
-            upcast_attention=upcast_attention,
-            resnet_time_scale_shift=resnet_time_scale_shift,
-            attention_type=attention_type,
-            resnet_skip_time_act=resnet_skip_time_act,
-            cross_attention_norm=cross_attention_norm,
-            attention_head_dim=attention_head_dim[-1],
-            dropout=dropout,
-        )
-
         # count how many layers upsample the images
         self.num_upsamplers = 0
 
@@ -445,6 +421,30 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
             layers_per_resnet_in_up_blocks.append(len(up_block.resnets))
         self.up_blocks = nn.CellList(up_blocks)
         self.layers_per_resnet_in_up_blocks = layers_per_resnet_in_up_blocks
+
+        # mid
+        self.mid_block = get_mid_block(
+            mid_block_type,
+            temb_channels=blocks_time_embed_dim,
+            in_channels=block_out_channels[-1],
+            resnet_eps=norm_eps,
+            resnet_act_fn=act_fn,
+            resnet_groups=norm_num_groups,
+            output_scale_factor=mid_block_scale_factor,
+            transformer_layers_per_block=transformer_layers_per_block[-1],
+            num_attention_heads=num_attention_heads[-1],
+            cross_attention_dim=cross_attention_dim[-1],
+            dual_cross_attention=dual_cross_attention,
+            use_linear_projection=use_linear_projection,
+            mid_block_only_cross_attention=mid_block_only_cross_attention,
+            upcast_attention=upcast_attention,
+            resnet_time_scale_shift=resnet_time_scale_shift,
+            attention_type=attention_type,
+            resnet_skip_time_act=resnet_skip_time_act,
+            cross_attention_norm=cross_attention_norm,
+            attention_head_dim=attention_head_dim[-1],
+            dropout=dropout,
+        )
 
         # out
         if norm_num_groups is not None:
@@ -657,12 +657,12 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
             if hasattr(module, "get_processor"):
                 processors[f"{name}.processor"] = module.get_processor()
 
-            for sub_name, child in module.name_cells():
+            for sub_name, child in module.name_cells().items():
                 fn_recursive_add_processors(f"{name}.{sub_name}", child, processors)
 
             return processors
 
-        for name, module in self.name_cells():
+        for name, module in self.name_cells().items():
             fn_recursive_add_processors(name, module, processors)
 
         return processors
@@ -695,10 +695,10 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
                 else:
                     module.set_processor(processor.pop(f"{name}.processor"))
 
-            for sub_name, child in module.name_cells():
+            for sub_name, child in module.name_cells().items():
                 fn_recursive_attn_processor(f"{name}.{sub_name}", child, processor)
 
-        for name, module in self.name_cells():
+        for name, module in self.name_cells().items():
             fn_recursive_attn_processor(name, module, processor)
 
     def set_default_attn_processor(self):

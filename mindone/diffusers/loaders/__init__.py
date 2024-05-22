@@ -51,6 +51,7 @@ def text_encoder_attn_modules(text_encoder):
 _import_structure = {
     "autoencoder": ["FromOriginalVAEMixin"],
     "controlnet": ["FromOriginalControlNetMixin"],
+    "ip_adapter": ["IPAdapterMixin"],
     "lora": ["LoraLoaderMixin", "StableDiffusionXLLoraLoaderMixin"],
     "peft": ["PeftAdapterMixin"],
     "single_file": ["FromSingleFileMixin"],
@@ -62,6 +63,7 @@ _import_structure = {
 if TYPE_CHECKING:
     from .autoencoder import FromOriginalVAEMixin
     from .controlnet import FromOriginalControlNetMixin
+    from .ip_adapter import IPAdapterMixin
     from .lora import LoraLoaderMixin, StableDiffusionXLLoraLoaderMixin
     from .peft import PeftAdapterMixin
     from .single_file import FromSingleFileMixin

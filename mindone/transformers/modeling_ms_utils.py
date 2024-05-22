@@ -1249,9 +1249,8 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
         new_embeddings = nn.Embedding(
             new_num_tokens,
             old_embedding_dim,
-            dtype=old_embeddings.embedding_table.dtype,
         )
-
+        new_embeddings.embedding_table.set_dtype(old_embeddings.embedding_table.dtype)
         # initialize all new embeddings (in particular added tokens)
         self._init_weights(new_embeddings)
 

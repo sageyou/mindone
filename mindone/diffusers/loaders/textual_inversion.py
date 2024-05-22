@@ -223,8 +223,8 @@ class TextualInversionLoaderMixin:
 
             if token in tokenizer.get_vocab():
                 raise ValueError(
-                    f"Token {token} already in tokenizer vocabulary. Please choose a different token name 
-                    or remove {token} and embedding from the tokenizer and text encoder."
+                    f"Token {token} already in tokenizer vocabulary. Please choose a different token name"
+                    f"or remove {token} and embedding from the tokenizer and text encoder."
                 )
 
             all_tokens.append(token)
@@ -246,9 +246,9 @@ class TextualInversionLoaderMixin:
                     i += 1
 
                 raise ValueError(
-                    f"Multi-vector Token {multi_vector_tokens} already in tokenizer vocabulary.
-                    Please choose a different token name or remove the {multi_vector_tokens} and embedding
-                    from the tokenizer and text encoder."
+                    f"Multi-vector Token {multi_vector_tokens} already in tokenizer vocabulary."
+                    f"Please choose a different token name or remove the {multi_vector_tokens} and embedding"
+                    f"from the tokenizer and text encoder."
                 )
 
             is_multi_vector = len(embedding.shape) > 1 and embedding.shape[0] > 1
