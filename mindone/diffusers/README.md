@@ -117,8 +117,12 @@ Most base, utility and mixin class are available.
 - [x] UniPCMultistepScheduler
 
 ### Loader
-- [ ] LoRA
-- [ ] FromSingleFileMixin
+- [x] LoRA
+- [x] FromOriginalControlnetMixin
+- [x] FromOriginalVAEMixin
+- [x] FromSingleFileMixin
+- [x] IPAdapterMixin
+- [x] TextualInversionLoaderMixin
 
 ## Limitations
 
