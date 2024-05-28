@@ -22,6 +22,12 @@ import mindspore as ms
 
 from mindone.safetensors.mindspore import load_file
 
+from ..models.embeddings import (
+    ImageProjection,
+    IPAdapterFullImageProjection,
+    IPAdapterPlusImageProjection,
+    MultiIPAdapterImageProjection,
+)
 from ..utils import (
     _get_model_file,
     delete_adapter_layers,
@@ -29,6 +35,7 @@ from ..utils import (
     set_adapter_layers,
     set_weights_and_activate_adapters,
 )
+from .single_file_utils import _load_param_into_net
 
 logger = logging.get_logger(__name__)
 
@@ -356,3 +363,150 @@ class UNet2DConditionLoadersMixin:
             # Pop also the corresponding adapter from the config
             if hasattr(self, "peft_config"):
                 self.peft_config.pop(adapter_name, None)
+
+    def _convert_ip_adapter_image_proj_to_diffusers(self, state_dict):
+        updated_state_dict = {}
+        image_projection = None
+
+        if "proj.weight" in state_dict:
+            # IP-Adapter
+            num_image_text_embeds = 4
+            clip_embeddings_dim = state_dict["proj.weight"].shape[-1]
+            cross_attention_dim = state_dict["proj.weight"].shape[0] // 4
+
+            image_projection = ImageProjection(
+                cross_attention_dim=cross_attention_dim,
+                image_embed_dim=clip_embeddings_dim,
+                num_image_text_embeds=num_image_text_embeds,
+            )
+
+            for key, value in state_dict.items():
+                diffusers_name = key.replace("proj", "image_embeds")
+                updated_state_dict[diffusers_name] = value
+
+        elif "proj.3.weight" in state_dict:
+            # IP-Adapter Full
+            clip_embeddings_dim = state_dict["proj.0.weight"].shape[0]
+            cross_attention_dim = state_dict["proj.3.weight"].shape[0]
+
+            image_projection = IPAdapterFullImageProjection(
+                cross_attention_dim=cross_attention_dim, image_embed_dim=clip_embeddings_dim
+            )
+
+            for key, value in state_dict.items():
+                diffusers_name = key.replace("proj.0", "ff.net.0.proj")
+                diffusers_name = diffusers_name.replace("proj.2", "ff.net.2")
+                diffusers_name = diffusers_name.replace("proj.3", "norm")
+                updated_state_dict[diffusers_name] = value
+
+        else:
+            # IP-Adapter Plus
+            num_image_text_embeds = state_dict["latents"].shape[1]
+            embed_dims = state_dict["proj_in.weight"].shape[1]
+            output_dims = state_dict["proj_out.weight"].shape[0]
+            hidden_dims = state_dict["latents"].shape[2]
+            heads = state_dict["layers.0.0.to_q.weight"].shape[0] // 64
+
+            image_projection = IPAdapterPlusImageProjection(
+                embed_dims=embed_dims,
+                output_dims=output_dims,
+                hidden_dims=hidden_dims,
+                heads=heads,
+                num_queries=num_image_text_embeds,
+            )
+
+            for key, value in state_dict.items():
+                diffusers_name = key.replace("0.to", "2.to")
+                diffusers_name = diffusers_name.replace("1.0.weight", "3.0.weight")
+                diffusers_name = diffusers_name.replace("1.0.bias", "3.0.bias")
+                diffusers_name = diffusers_name.replace("1.1.weight", "3.1.net.0.proj.weight")
+                diffusers_name = diffusers_name.replace("1.3.weight", "3.1.net.2.weight")
+
+                if "norm1" in diffusers_name:
+                    updated_state_dict[diffusers_name.replace("0.norm1", "0")] = value
+                elif "norm2" in diffusers_name:
+                    updated_state_dict[diffusers_name.replace("0.norm2", "1")] = value
+                elif "to_kv" in diffusers_name:
+                    v_chunk = value.chunk(2, dim=0)
+                    updated_state_dict[diffusers_name.replace("to_kv", "to_k")] = v_chunk[0]
+                    updated_state_dict[diffusers_name.replace("to_kv", "to_v")] = v_chunk[1]
+                elif "to_out" in diffusers_name:
+                    updated_state_dict[diffusers_name.replace("to_out", "to_out.0")] = value
+                else:
+                    updated_state_dict[diffusers_name] = value
+        _load_param_into_net(image_projection, updated_state_dict)
+
+        return image_projection
+
+    def _convert_ip_adapter_attn_to_diffusers(self, state_dicts):
+        from ..models.attention_processor import AttnProcessor, IPAdapterAttnProcessor
+
+        # set ip-adapter cross-attention processors & load state_dict
+        attn_procs = {}
+        key_id = 1
+
+        for name in self.attn_processors.keys():
+            cross_attention_dim = None if name.endswith("attn1.processor") else self.config.cross_attention_dim
+            if name.startswith("mid_block"):
+                hidden_size = self.config.block_out_channels[-1]
+            elif name.startswith("up_blocks"):
+                block_id = int(name[len("up_blocks.")])
+                hidden_size = list(reversed(self.config.block_out_channels))[block_id]
+            elif name.startswith("down_blocks"):
+                block_id = int(name[len("down_blocks.")])
+                hidden_size = self.config.block_out_channels[block_id]
+
+            if cross_attention_dim is None or "motion_modules" in name:
+                attn_processor_class = AttnProcessor
+                attn_procs[name] = attn_processor_class()
+            else:
+                attn_processor_class = IPAdapterAttnProcessor
+                num_image_text_embeds = []
+                for state_dict in state_dicts:
+                    if "proj.weight" in state_dict["image_proj"]:
+                        # IP-Adapter
+                        num_image_text_embeds += [4]
+                    elif "proj.3.weight" in state_dict["image_proj"]:
+                        # IP-Adapter Full Face
+                        num_image_text_embeds += [257]  # 256 CLIP tokens + 1 CLS token
+                    else:
+                        # IP-Adapter Plus
+                        num_image_text_embeds += [state_dict["image_proj"]["latents"].shape[1]]
+
+                attn_procs[name] = attn_processor_class(
+                    hidden_size=hidden_size,
+                    cross_attention_dim=cross_attention_dim,
+                    scale=1.0,
+                    num_tokens=num_image_text_embeds,
+                )
+                value_dict = {}
+                for i, state_dict in enumerate(state_dicts):
+                    value_dict.update({f"to_k_ip.{i}.weight": state_dict["ip_adapter"][f"{key_id}.to_k_ip.weight"]})
+                    value_dict.update({f"to_v_ip.{i}.weight": state_dict["ip_adapter"][f"{key_id}.to_v_ip.weight"]})
+
+                _load_param_into_net(attn_procs[name], value_dict)
+
+                key_id += 2
+
+        return attn_procs
+
+    def _load_ip_adapter_weights(self, state_dicts):
+        if not isinstance(state_dicts, list):
+            state_dicts = [state_dicts]
+        # Set encoder_hid_proj after loading ip_adapter weights,
+        # because `IPAdapterPlusImageProjection` also has `attn_processors`.
+        self.encoder_hid_proj = None
+
+        attn_procs = self._convert_ip_adapter_attn_to_diffusers(state_dicts)
+        self.set_attn_processor(attn_procs)
+
+        # convert IP-Adapter Image Projection layers to diffusers
+        image_projection_layers = []
+        for state_dict in state_dicts:
+            image_projection_layer = self._convert_ip_adapter_image_proj_to_diffusers(state_dict["image_proj"])
+            image_projection_layers.append(image_projection_layer)
+
+        self.encoder_hid_proj = MultiIPAdapterImageProjection(image_projection_layers)
+        self.config.encoder_hid_dim_type = "ip_image_proj"
+        self.encoder_hid_dim_type = "ip_image_proj"
+        self.to(dtype=self.dtype)

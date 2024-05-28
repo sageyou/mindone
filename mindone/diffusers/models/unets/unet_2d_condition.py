@@ -708,12 +708,12 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
             if hasattr(module, "get_processor"):
                 processors[f"{name}.processor"] = module.get_processor()
 
-            for sub_name, child in module.name_cells():
+            for sub_name, child in module.name_cells().items():
                 fn_recursive_add_processors(f"{name}.{sub_name}", child, processors)
 
             return processors
 
-        for name, module in self.name_cells():
+        for name, module in self.name_cells().items():
             fn_recursive_add_processors(name, module, processors)
 
         return processors
@@ -746,10 +746,10 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin,
                 else:
                     module.set_processor(processor.pop(f"{name}.processor"))
 
-            for sub_name, child in module.name_cells():
+            for sub_name, child in module.name_cells().items():
                 fn_recursive_attn_processor(f"{name}.{sub_name}", child, processor)
 
-        for name, module in self.name_cells():
+        for name, module in self.name_cells().items():
             fn_recursive_attn_processor(name, module, processor)
 
     def set_default_attn_processor(self):
