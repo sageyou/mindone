@@ -6,6 +6,7 @@ _import_structure = {
     "pipeline_output": ["StableDiffusionPipelineOutput"],
     "pipeline_stable_diffusion": ["StableDiffusionPipeline"],
     "pipeline_stable_diffusion_img2img": ["StableDiffusionImg2ImgPipeline"],
+    "pipeline_stable_diffusion_inpaint": ["StableDiffusionInpaintPipeline"],
     "safety_checker": ["StableDiffusionSafetyChecker"],
 }
 
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
         StableDiffusionSafetyChecker,
     )
     from .pipeline_stable_diffusion_img2img import StableDiffusionImg2ImgPipeline
+    from .pipeline_stable_diffusion_inpaint import StableDiffusionInpaintPipeline
 
 else:
     import sys

@@ -9,11 +9,13 @@ _import_structure = {
     "stable_diffusion": [
         "StableDiffusionPipeline",
         "StableDiffusionImg2ImgPipeline",
+        "StableDiffusionInpaintPipeline",
     ],
     "stable_diffusion_xl": [
         "StableDiffusionXLPipeline",
         "StableDiffusionXLInpaintPipeline",
         "StableDiffusionXLImg2ImgPipeline",
+        "StableDiffusionXLInstructPix2PixPipeline",
     ],
     "pipeline_utils": [
         "DiffusionPipeline",
@@ -25,11 +27,16 @@ if TYPE_CHECKING:
     from .ddim import DDIMPipeline
     from .ddpm import DDPMPipeline
     from .pipeline_utils import DiffusionPipeline, ImagePipelineOutput
-    from .stable_diffusion import StableDiffusionImg2ImgPipeline, StableDiffusionPipeline
+    from .stable_diffusion import (
+        StableDiffusionImg2ImgPipeline,
+        StableDiffusionPipeline,
+        StableDiffusionInpaintPipeline,
+    )
     from .stable_diffusion_xl import (
         StableDiffusionXLImg2ImgPipeline,
         StableDiffusionXLInpaintPipeline,
         StableDiffusionXLPipeline,
+        StableDiffusionXLInstructPix2PixPipeline,
     )
 else:
     import sys

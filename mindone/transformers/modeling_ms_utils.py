@@ -1112,6 +1112,7 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
             return mappings
 
         def convert_state_dict(m, state_dict_pt):
+            model_dtype = next(iter(m.get_parameters())).dtype
             mappings = get_pt2ms_mappings(m)
             state_dict_ms = {}
             for name_pt, data_pt in state_dict_pt.items():
@@ -1119,6 +1120,7 @@ class MSPreTrainedModel(nn.Cell, ModuleUtilsMixin, PushToHubMixin, PeftAdapterMi
                 data_ms = data_mapping(data_pt)
                 if name_ms is not None:
                     state_dict_ms[name_ms] = data_ms
+                    state_dict_ms[name_ms].set_dtype(model_dtype)
             return state_dict_ms
 
         missing_keys, unexpected_keys = ms.load_param_into_net(
