@@ -417,6 +417,8 @@ class DiffusionPipeline(ConfigMixin, PushToHubMixin):
         >>> pipeline.scheduler = scheduler
         ```
         """
+        from mindspore import ops
+
         cache_dir = kwargs.pop("cache_dir", None)
         resume_download = kwargs.pop("resume_download", False)
         force_download = kwargs.pop("force_download", False)
@@ -558,6 +560,7 @@ class DiffusionPipeline(ConfigMixin, PushToHubMixin):
                 loaded_sub_model = passed_class_obj[name]
             else:
                 # load sub model
+                print("===class name: ", class_name)
                 loaded_sub_model = load_sub_model(
                     library_name=library_name,
                     class_name=class_name,

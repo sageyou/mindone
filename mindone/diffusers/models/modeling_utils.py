@@ -591,6 +591,9 @@ class ModelMixin(nn.Cell, PushToHubMixin):
                 original_loaded_keys,
                 ignore_mismatched_sizes,
             )
+            model_dtype = next(iter(model_to_load.get_parameters())).dtype
+            for k, _ in state_dict.items():
+                state_dict[k].set_dtype(model_dtype)
             error_msgs = _load_state_dict_into_model(model_to_load, state_dict)
 
         if len(error_msgs) > 0:

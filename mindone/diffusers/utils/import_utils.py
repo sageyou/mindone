@@ -16,6 +16,7 @@ Import utilities: Utilities related to imports and our lazy inits.
 """
 import importlib.util
 import os
+import sys
 from itertools import chain
 from types import ModuleType
 from typing import Any
@@ -23,6 +24,11 @@ from typing import Any
 from huggingface_hub.utils import is_jinja_available  # noqa: F401
 
 from . import logging
+
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -95,3 +101,15 @@ class _LazyModule(ModuleType):
 
     def __reduce__(self):
         return (self.__class__, (self._name, self.__file__, self._import_structure))
+
+
+def is_invisible_watermark_available():
+    return _invisible_watermark_available
+
+
+_invisible_watermark_available = importlib.util.find_spec("imwatermark") is not None
+try:
+    _invisible_watermark_version = importlib_metadata.version("invisible-watermark")
+    logger.debug(f"Successfully imported invisible-watermark version {_invisible_watermark_version}")
+except importlib_metadata.PackageNotFoundError:
+    _invisible_watermark_available = False
