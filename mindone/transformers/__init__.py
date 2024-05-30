@@ -15,3 +15,6 @@ from .models.t5 import (
     T5Model,
     T5PreTrainedModel,
 )
+from .models.dpt import (
+    DPTForDepthEstimation,
+)
